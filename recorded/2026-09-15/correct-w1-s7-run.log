@@ -1,0 +1,2 @@
+PASS seed=7 width=1 accepted=219 emitted=219
+/private/tmp/rivoryxa-ready-valid-release/tb/tb_ready_valid.sv:137: $finish called at 4186000 (1ps)

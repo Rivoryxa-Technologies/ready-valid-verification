@@ -69,3 +69,7 @@ two RTL modules are synthesizable. Production integration still needs project
 lint, synthesis, timing, reset, and system-level verification.
 
 MIT licensed; see `LICENSE`.
+
+## Recorded result
+
+[Review log and measured results](recorded/2026-09-15/README.md): 4 correct configurations pass and 4 seeded failures are detected. Raw logs, source hashes, timings, and the default RTL synthesis check are included. These are finite educational examples, not client results.
