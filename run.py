@@ -48,10 +48,8 @@ def command(cmd: list[str], timeout: float, log: Path) -> tuple[int, str, float,
             timed_out = True
             os.killpg(proc.pid, signal.SIGKILL)
             remainder, _ = proc.communicate()
-            partial = exc.stdout or ""
-            if isinstance(partial, bytes):
-                partial = partial.decode(errors="replace")
-            output = partial + (remainder or "") + "\nTIMEOUT\n"
+            # communicate() returns the complete captured stream after kill.
+            output = (remainder or "") + "\nTIMEOUT\n"
             code = 124
     except OSError as exc:
         code, output = 127, f"EXEC_ERROR: {exc}\n"
@@ -105,16 +103,18 @@ def main() -> int:
                            f"-Ptb.WIDTH={width}", "-s", "tb", "-o", str(binary),
                            *map(str, sources)]
             cc, _, compile_s, compile_timeout = command(compile_cmd, args.timeout, compile_log)
+            run_cmd = [tools["vvp"], str(binary), f"+SEED={seed}"]
             rc, output, run_s, run_timeout = (None, "", 0.0, False)
             if cc == 0:
                 rc, output, run_s, run_timeout = command(
-                    [tools["vvp"], str(binary), f"+SEED={seed}"], args.timeout, run_log)
+                    run_cmd, args.timeout, run_log)
             else:
                 run_log.write_text("simulation skipped: compile failed\n", encoding="utf-8")
             marker = "FAIL_STABILITY_OR_ORDER"
             passed = outcome_ok(mutant, cc, rc, output, compile_timeout or run_timeout)
             all_ok &= passed
             records.append({"name": name, "implementation": kind, "width": width, "seed": seed,
+                            "compile_command": compile_cmd, "run_command": run_cmd,
                             "compile_exit": cc, "run_exit": rc, "compile_seconds": round(compile_s, 6),
                             "run_seconds": round(run_s, 6), "timed_out": compile_timeout or run_timeout,
                             "expected": "PASS" if not mutant else marker, "outcome_ok": passed,
