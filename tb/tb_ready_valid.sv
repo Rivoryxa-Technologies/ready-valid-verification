@@ -10,7 +10,7 @@ module tb #(
     logic [WIDTH-1:0] expected[$];
     logic [WIDTH-1:0] held_data;
     logic held_valid, last_take_in, last_take_out;
-    integer seed, cycle, accepted, emitted;
+    integer configured_seed, random_state, cycle, accepted, emitted;
     integer source_value;
 
 `ifdef MUTANT
@@ -44,7 +44,7 @@ module tb #(
                 accepted = 0;
                 emitted = 0;
             end
-            if (held_valid && (!out_valid || out_data !== held_data))
+            if (held_valid && (out_valid !== 1'b1 || out_data !== held_data))
                 fail("FAIL_STABILITY_OR_ORDER", "out_valid or out_data changed while stalled");
             if (take_out) begin
                 if (expected.size() == 0)
@@ -71,7 +71,8 @@ module tb #(
     endtask
 
     initial begin
-        if (!$value$plusargs("SEED=%d", seed)) seed = 1;
+        if (!$value$plusargs("SEED=%d", configured_seed)) configured_seed = 1;
+        random_state = configured_seed;
         accepted = 0; emitted = 0; held_valid = 0; last_take_in = 0; last_take_out = 0;
         rst = 1; in_valid = 0; in_data = '0; out_ready = 0;
         repeat (3) step();
@@ -112,9 +113,9 @@ module tb #(
         // after a handshake, as required by ready/valid.
         source_value = 17;
         for (cycle = 0; cycle < RANDOM_CYCLES; cycle = cycle + 1) begin
-            out_ready = ($urandom(seed) % 100) < 61;
+            out_ready = ($urandom(random_state) % 100) < 61;
             if (!in_valid || last_take_in) begin
-                in_valid = (($urandom(seed) % 100) < 73);
+                in_valid = (($urandom(random_state) % 100) < 73);
                 if (in_valid) begin
                     in_data = WIDTH'(source_value);
                     source_value = source_value + 1;
@@ -123,13 +124,16 @@ module tb #(
             step();
         end
 
-        in_valid = 0; out_ready = 1;
+        // Do not withdraw a final blocked source item; first let it handshake.
+        out_ready = 1;
+        while (in_valid && !last_take_in) step();
+        in_valid = 0;
         while (expected.size() != 0) step();
         step();
         if (out_valid) fail("FAIL_DRAIN", "out_valid remained set after drain");
         if (accepted == 0 || emitted != accepted)
             fail("FAIL_COUNTS", "accepted/emitted counts disagree");
-        $display("PASS seed=%0d width=%0d accepted=%0d emitted=%0d", seed, WIDTH, accepted, emitted);
+        $display("PASS seed=%0d width=%0d accepted=%0d emitted=%0d", configured_seed, WIDTH, accepted, emitted);
         $finish;
     end
 endmodule

@@ -37,13 +37,14 @@ Unexpected compile, timeout, pass, failure, or failure marker returns exit code
 `PASS` and every mutant configuration fails specifically with
 `FAIL_STABILITY_OR_ORDER`.
 
-The ignored `evidence/` directory retains compile logs, simulation logs,
+Each invocation creates a unique run subdirectory under the ignored `evidence/`
+directory. It retains compile logs, simulation logs,
 parameter widths, random seeds, exit codes, tool versions, platform, wall times,
 source SHA-256 hashes, and the outcome matrix in `summary.json`. Choose another destination with
 `--evidence-dir DIR`.
 
-The default matrix runs six simulations: widths 8 and 17 over seeds 1, 2025,
-and 99. Each of the three parameter/seed pairs runs once against the correct RTL
+The default matrix runs eight simulations: widths 1, 8, and 17 over four fixed
+parameter/seed pairs. Each pair runs once against the correct RTL
 and once against the mutant. Harness regressions run with:
 
 ```sh

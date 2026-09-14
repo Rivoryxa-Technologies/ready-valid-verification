@@ -15,15 +15,17 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(run.outcome_ok(False, 0, 1, "PASS seed=1", False))
         self.assertTrue(run.outcome_ok(True, 0, 1, "FAIL_STABILITY_OR_ORDER", False))
         self.assertFalse(run.outcome_ok(True, 0, 1, "some arbitrary failure", False))
+        self.assertFalse(run.outcome_ok(True, 0, 1, "FAIL_STABILITY_OR_ORDER FAIL_BASIC", False))
         self.assertFalse(run.outcome_ok(True, 0, 124, "FAIL_STABILITY_OR_ORDER", True))
 
     def test_command_timeout_is_classified(self):
         with tempfile.TemporaryDirectory() as directory:
             code, output, _, timed_out = run.command(
-                [sys.executable, "-c", "import time; time.sleep(2)"],
+                [sys.executable, "-c", "import time; print('started', flush=True); time.sleep(2)"],
                 0.05, Path(directory) / "timeout.log")
         self.assertEqual(code, 124)
         self.assertTrue(timed_out)
+        self.assertIn("started", output)
         self.assertIn("TIMEOUT", output)
 
     def test_missing_tools_returns_two(self):
